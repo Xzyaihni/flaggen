@@ -1,0 +1,10 @@
+[package]
+name = "flaggen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fastrand = "2.1.1"
+image = "0.25.2"
+nalgebra = "0.33.0"
+strum = { version = "0.26.3", features = ["derive"] }
