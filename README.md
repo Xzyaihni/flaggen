@@ -1,6 +1,6 @@
 # HOW AAAAAA HOW
 ```
-git clone --depth https://github.com/Xzyaihni/flaggen
+git clone --depth 1 https://github.com/Xzyaihni/flaggen
 cd flaggen
 cargo r -r
 ```
