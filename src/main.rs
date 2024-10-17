@@ -49,7 +49,9 @@ pub enum FlagForegroundShape
 {
     Circle,
     Ring(f32),
-    LeftTriangle
+    LeftTriangle,
+    Cross{thickness: f32},
+    Plus{ratio: f32, thickness: f32}
 }
 
 impl FlagForegroundShape
@@ -61,6 +63,8 @@ impl FlagForegroundShape
             0 => Self::Circle,
             1 => Self::Ring(fastrand::f32() * 0.5 + 0.1),
             2 => Self::LeftTriangle,
+            3 => Self::Cross{thickness: fastrand::f32() * 0.2 + 0.05},
+            4 => Self::Plus{ratio: fastrand::f32() * 3.0 + 2.0, thickness: fastrand::f32() * 0.2 + 0.05},
             _ => unreachable!()
         }
     }
@@ -105,6 +109,8 @@ impl FlagForeground
         let size: Vector2<i32> = Vector2::new(image.width(), image.height()).cast();
         let lower_size = Vector2::repeat(image.width().min(image.height()) as f32);
 
+        let aspect = size.x as f32 / size.y as f32;
+
         match self.shape
         {
             FlagForegroundShape::Circle
@@ -139,6 +145,27 @@ impl FlagForeground
                     let pos = pos.map(|x| x as f32).component_div(&lower_size);
 
                     (pos.x + (pos.y - 0.5).abs()) < 0.5
+                });
+            },
+            FlagForegroundShape::Cross{thickness} =>
+            {
+                Self::draw_with_fn(image, self.color, |pos|
+                {
+                    let pos = pos.map(|x| x as f32).component_div(&size.cast()) - Vector2::repeat(0.5);
+
+                    (pos.x.abs() - pos.y.abs()).abs() < thickness
+                });
+            },
+            FlagForegroundShape::Plus{ratio, thickness} =>
+            {
+                Self::draw_with_fn(image, self.color, |pos|
+                {
+                    let pos = pos.map(|x| x as f32).component_div(&lower_size);
+
+                    let inside_vertical = (pos.x - aspect / ratio).abs() < thickness;
+                    let inside_horizontal = (pos.y - 0.5).abs() < thickness;
+
+                    inside_vertical || inside_horizontal
                 });
             }
         }
