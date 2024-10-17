@@ -175,14 +175,22 @@ pub fn random_flag() -> RgbImage
 
     let mut has_foreground = fastrand::bool();
 
-    if background.lines.len() == 1
+    let solid = background.lines.len() == 1;
+    if solid
     {
         has_foreground = true;
     }
 
+    let mut foreground = has_foreground.then(FlagForeground::random);
+
+    if let (Some(foreground), true) = (foreground.as_mut(), solid)
+    {
+        foreground.shape = FlagForegroundShape::Circle;
+    }
+
     create_flag(
         background,
-        has_foreground.then(FlagForeground::random),
+        foreground,
         640,
         360
     )
