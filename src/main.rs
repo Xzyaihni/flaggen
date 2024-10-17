@@ -263,7 +263,9 @@ fn main()
             {
                 match win_event
                 {
-                    WindowEvent::SizeChanged(_, _) =>
+                    WindowEvent::Shown
+                    | WindowEvent::FocusGained
+                    | WindowEvent::SizeChanged(_, _) =>
                     {
                         canvas.set_draw_color(Color::RGB(0, 0, 0));
                         canvas.clear();
