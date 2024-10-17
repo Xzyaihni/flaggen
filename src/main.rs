@@ -1,3 +1,10 @@
+use sdl2::{
+    pixels::PixelFormatEnum,
+    render::TextureAccess,
+    event::Event,
+    keyboard::Keycode
+};
+
 use strum::EnumCount;
 
 use nalgebra::Vector2;
@@ -169,7 +176,7 @@ pub fn create_flag(
     background
 }
 
-pub fn random_flag() -> RgbImage
+pub fn random_flag(width: u32, height: u32) -> RgbImage
 {
     let background = FlagBackground::random();
 
@@ -191,16 +198,61 @@ pub fn random_flag() -> RgbImage
     create_flag(
         background,
         foreground,
-        640,
-        360
+        width,
+        height
     )
 }
 
 fn main()
 {
-    let flag = random_flag();
+    let ctx = sdl2::init().unwrap();
 
-    let path = "flag.png";
-    eprintln!("saving flag to {path}");
-    flag.save(path).unwrap();
+    let video = ctx.video().unwrap();
+
+    let window = video.window("flag generator!", 640, 360)
+        .build()
+        .unwrap();
+
+    let mut canvas = window.into_canvas().build().unwrap();
+
+    let mut events = ctx.event_pump().unwrap();
+
+    let mut redraw = true;
+    loop
+    {
+        if redraw
+        {
+            let (width, height) = canvas.window().size();
+            let flag = random_flag(width, height);
+
+            let creator = canvas.texture_creator();
+            let mut texture = creator.create_texture(
+                PixelFormatEnum::RGB24,
+                TextureAccess::Static,
+                width,
+                height
+            ).unwrap();
+
+            texture.update(None, &flag, flag.width() as usize * 3).unwrap();
+
+            canvas.copy(&texture, None, None).unwrap();
+
+            canvas.present();
+
+            let path = "flag.png";
+            flag.save(path).unwrap();
+
+            redraw = false;
+        }
+
+        for event in events.poll_iter()
+        {
+            match event
+            {
+                Event::Quit{..} => return,
+                Event::KeyDown{keycode: Some(Keycode::Space), ..} => redraw = true,
+                _ => ()
+            }
+        }
+    }
 }
