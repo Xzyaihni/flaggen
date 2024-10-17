@@ -1,7 +1,8 @@
 use sdl2::{
-    pixels::PixelFormatEnum,
-    render::TextureAccess,
-    event::Event,
+    pixels::{Color, PixelFormatEnum},
+    render::{WindowCanvas, TextureAccess, Texture, TextureCreator},
+    video::WindowContext,
+    event::{WindowEvent, Event},
     keyboard::Keycode
 };
 
@@ -210,49 +211,71 @@ fn main()
     let video = ctx.video().unwrap();
 
     let window = video.window("flag generator!", 640, 360)
+        .resizable()
         .build()
         .unwrap();
 
     let mut canvas = window.into_canvas().build().unwrap();
+    let creator = canvas.texture_creator();
 
     let mut events = ctx.event_pump().unwrap();
 
-    let mut redraw = true;
-    loop
+    let mut texture = None;
+
+    fn next_flag<'a>(
+        canvas: &mut WindowCanvas,
+        creator: &'a TextureCreator<WindowContext>,
+        texture: &mut Option<Texture<'a>>
+    )
     {
-        if redraw
+        let (width, height) = canvas.window().size();
+        let flag = random_flag(width, height);
+
+        *texture = Some(creator.create_texture(
+            PixelFormatEnum::RGB24,
+            TextureAccess::Static,
+            width,
+            height
+        ).unwrap());
+
+        texture.as_mut().unwrap().update(None, &flag, flag.width() as usize * 3).unwrap();
+
+        canvas.copy(texture.as_ref().unwrap(), None, None).unwrap();
+
+        canvas.present();
+
+        let path = "flag.png";
+        flag.save(path).unwrap();
+    }
+
+    next_flag(&mut canvas, &creator, &mut texture);
+
+    for event in events.wait_iter()
+    {
+        match event
         {
-            let (width, height) = canvas.window().size();
-            let flag = random_flag(width, height);
-
-            let creator = canvas.texture_creator();
-            let mut texture = creator.create_texture(
-                PixelFormatEnum::RGB24,
-                TextureAccess::Static,
-                width,
-                height
-            ).unwrap();
-
-            texture.update(None, &flag, flag.width() as usize * 3).unwrap();
-
-            canvas.copy(&texture, None, None).unwrap();
-
-            canvas.present();
-
-            let path = "flag.png";
-            flag.save(path).unwrap();
-
-            redraw = false;
-        }
-
-        for event in events.poll_iter()
-        {
-            match event
+            Event::Quit{..} => return,
+            Event::KeyDown{keycode: Some(Keycode::Space), ..} =>
             {
-                Event::Quit{..} => return,
-                Event::KeyDown{keycode: Some(Keycode::Space), ..} => redraw = true,
-                _ => ()
-            }
+                next_flag(&mut canvas, &creator, &mut texture);
+            },
+            Event::Window{win_event, ..} =>
+            {
+                match win_event
+                {
+                    WindowEvent::SizeChanged(_, _) =>
+                    {
+                        canvas.set_draw_color(Color::RGB(0, 0, 0));
+                        canvas.clear();
+
+                        canvas.copy(texture.as_ref().unwrap(), None, None).unwrap();
+
+                        canvas.present();
+                    },
+                    _ => ()
+                }
+            },
+            _ => ()
         }
     }
 }
